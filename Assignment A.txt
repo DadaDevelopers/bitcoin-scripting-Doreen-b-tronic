@@ -1,0 +1,42 @@
+Given Script
+
+OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
+
+OP_DUP - Duplicates the top item on the stack. In P2PKH, it duplicates the public key so one copy can be hashed while keeping the original for signature verification.
+OP_HASH160  - Hashes the duplicated public key using SHA-256 followed by RIPEMD-160, producing a 20-byte public key hash.
+<pubKeyHash>  - The expected public key hash from the recipient’s address. This is a constant pushed onto the stack.
+OP_EQUALVERIFY  - Checks if the hash of the provided public key matches <pubKeyHash>. If not, script fails immediately. Verifies equality and removes the top two stack items.
+OP_CHECKSIG - Uses the remaining public key and the provided signature to verify the transaction. If signature verification fails, the script fail
+
+
+Data Flow Diagram
+[Signature, PublicKey]  <- Pushed by unlocking script
+        |
+        v
+      OP_DUP               Stack: [Signature, PublicKey, PublicKey]
+        |
+        v
+    OP_HASH160            Stack: [Signature, PublicKey, pubKeyHash_calculated]
+        |
+        v
+  Push <pubKeyHash>       Stack: [Signature, PublicKey, pubKeyHash_calculated, pubKeyHash_expected]
+        |
+        v
+  OP_EQUALVERIFY          Stack: [Signature, PublicKey]  (fails if hashes differ)
+        |
+        v
+   OP_CHECKSIG            Stack: [True] or [False]  (transaction valid if True)
+
+
+
+
+
+What Happens if Signature Verification Fails?
+When the OP_CHECKSIG returns false the script fails. The transaction is rejected by the bitcoin network and no transfer happens. This ensures that only the holder of the private key corresponding to the public key can spend the coins.
+
+
+
+
+What are the security benefits of hash verification?
+The OP_HASH160 + OP_EQUALVERIFY step prevents anyone from spending without the correct public key. Only the hash of the public key is stored in the UTXO, not the public key itself, providing privacy until the coins are spent. Protects against collision attacks and ensures the integrity of the address.
+
